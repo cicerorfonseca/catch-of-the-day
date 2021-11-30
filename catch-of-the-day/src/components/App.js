@@ -4,12 +4,25 @@ import Order from './Order';
 import Inventory from './Inventory';
 import samplefishes from '../sample-fishes';
 import Fish from './Fish';
+import base from '../base';
 
 class App extends React.Component {
   state = {
     fishes: {},
-    orders: {},
+    order: {},
   };
+
+  componentDidMount() {
+    const { params } = this.props.match;
+    this.ref = base.syncState(`${params.storeId}/fishes`, {
+      context: this,
+      state: 'fishes',
+    });
+  }
+
+  componentWillUnmount() {
+    base.removeBinding(this.ref);
+  }
 
   addFish = (fish) => {
     // Copy the current state
@@ -22,13 +35,16 @@ class App extends React.Component {
     this.setState({ fishes });
   };
 
-  loadSampleFishes = () => {
-    // this.setState({ fishes: samplefishes });
+  addToOrder = (key) => {
+    const order = { ...this.state.order };
+    order[key] = order[key] + 1 || 1;
+    this.setState({ order });
+  };
 
-    Object.keys(samplefishes).map((key) => {
-      console.log(samplefishes[key]);
-      this.addFish(samplefishes[key]);
-    });
+  loadSampleFishes = () => {
+    const fishes = { ...this.state.fishes, ...samplefishes };
+
+    this.setState({ fishes });
   };
 
   render() {
@@ -38,11 +54,16 @@ class App extends React.Component {
           <Header tagline='Fresh Seafood Market' />
           <ul className='fishes'>
             {Object.keys(this.state.fishes).map((key, index) => (
-              <Fish key={index} details={this.state.fishes[key]} />
+              <Fish
+                key={index}
+                index={key} //The key isn't a prop by default so it needs to be passed with a name other than key
+                details={this.state.fishes[key]}
+                addToOrder={this.addToOrder}
+              />
             ))}
           </ul>
         </div>
-        <Order />
+        <Order fishes={this.state.fishes} order={this.state.order} />
         <Inventory
           addFish={this.addFish}
           loadSampleFishes={this.loadSampleFishes}
